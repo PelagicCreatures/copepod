@@ -1,0 +1,24 @@
+<html>
+	<head>
+	</head>
+	<body>
+
+		<script src='https://cdn.jsdelivr.net/npm/@pelagiccreatures/sargasso@0.8.5/dist/sargasso.iife.js'></script>
+		<script src='dist/copepod.iife.js'></script>
+
+		<p>in the console try: live.value.itsalive="changed!" to see input value change. Also watch console.log to see changes make in input.</p>
+
+		<input name="itsalive" value="initial value from input">
+
+		<script defer>
+			let data = {
+				meta: 'data'
+			}
+			let input = document.querySelector('[name="itsalive"]');
+			window.live = new PelagicCreatures.Copepod.Copepod(data, input);
+			window.live.subscribe('subscriptionId', (val) => {
+				console.log(val)
+			});
+		</script>
+	</body>
+</html>

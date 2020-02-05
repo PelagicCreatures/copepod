@@ -1,0 +1,34 @@
+{
+	"name": "@pelagiccreatures/copepod",
+	"version": "0.1.1",
+	"description": "Sargasso Lazy Loading Images",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"build": "rollup --no-treeshake -c rollup.config.js"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/PelagicCreatures/copepod.git"
+	},
+	"author": "Michael Rhodes",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/PelagicCreatures/copepod/issues"
+	},
+	"homepage": "https://github.com/PelagicCreatures/copepod#readme",
+	"peerDependencies": {
+		"@pelagiccreatures/sargasso": "^0.8.1"
+	},
+	"devDependencies": {
+		"@rollup/plugin-commonjs": "^11.0.1",
+		"@rollup/plugin-json": "^4.0.1",
+		"@rollup/plugin-node-resolve": "^7.0.0",
+		"eslint": "^6.8.0",
+		"eslint-config-standard": "^14.1.0",
+		"eslint-plugin-import": "^2.19.1",
+		"eslint-plugin-node": "^10.0.0",
+		"eslint-plugin-promise": "^4.2.1",
+		"eslint-plugin-standard": "^4.0.1"
+	}
+}
