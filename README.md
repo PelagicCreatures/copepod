@@ -2,7 +2,7 @@
 
 ### Sargasso supervised Lazy Loaded Images
 
-[Demo Page](https://blog.myanti.social/demos/copepod)
+[Demo Page](https://blog.PelagicCreatures.com/demos/copepod)
 
 ### Status: under active development. More soon.
 
