@@ -41,33 +41,40 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 			this.obj[property] = value;
 		}
 
-		deleteProperty (property) {
+		delete (property) {
 			delete this.obj[property];
 		}
 
 		attachInput (input) {
 			const inputProp = input.getAttribute('name');
-			this.inputs[inputProp] = input;
+			if (!this.inputs[inputProp]) {
+				this.inputs[inputProp] = input;
 
-			// if input has a value, initialize this.obj[property] to input value
-			if (input.value && input.value !== this.obj[inputProp]) {
-				this.obj[inputProp] = input.value;
-			} else {
-				this.obj[inputProp] = '';
-			}
-
-			// keep property in sync with input
-			sargasso.utils.elementTools.on(this.constructor.name + '-' + this.uid, input, 'keyup change click', '', (e) => {
-				if (e.target.value !== this.obj[inputProp]) {
-					this.obj[inputProp] = e.target.value;
+				// if input has a value, initialize this.obj[property] to input value
+				if (input.value && input.value !== this.obj[inputProp]) {
+					this.obj[inputProp] = input.value;
+				} else {
+					this.obj[inputProp] = '';
 				}
-			}, true);
+
+				// keep property in sync with input
+				const id = this.constructor.name + '-' + this.uid;
+				const handler = (e) => {
+					if (e.target.value !== this.obj[inputProp]) {
+						this.obj[inputProp] = e.target.value;
+					}
+				};
+				sargasso.utils.elementTools.on(id, input, 'keyup change click', null, handler);
+			}
 		}
 
 		detatchInput (input) {
 			const inputProp = input.getAttribute('name');
-			sargasso.utils.elementTools.off(this.constructor.name + '-' + this.uid, input, 'keyup change click', '');
-			delete this.inputs[inputProp];
+			if (this.inputs[inputProp]) {
+				const id = this.constructor.name + '-' + this.uid;
+				sargasso.utils.elementTools.off(id, input, 'keyup change click', null);
+				delete this.inputs[inputProp];
+			}
 		}
 
 		subscribe (id, fn) {
