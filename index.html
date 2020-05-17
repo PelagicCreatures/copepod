@@ -6,23 +6,26 @@
 		<script src='https://cdn.jsdelivr.net/npm/@pelagiccreatures/sargasso@0.8.5/dist/sargasso.iife.js'></script>
 		<script src='dist/copepod.iife.js'></script>
 
-		<p>in the console try: live.value.itsalive="changed!" to see input value change. Also watch console.log to see changes make in input.</p>
+		<p>in the console try: live.obj.itsalive1="changed!" to see input value change. Also watch console.log to see changes make in input.</p>
 
-		<input name="itsalive" value="1">
-		<input name="itsalive2" value="2">
+		<p>input1: <input name="itsalive1" value="1"> Value: <span id="itsalive1"></span></p>
+		<p>input2: <input name="itsalive2" value="2"> Value: <span id="itsalive2"></span></p>
 
 		<script defer>
 			let data = {
-				meta: 'data'
+				meta: 'data',
+				itsalive: 11,
+				itsalive2: 22
 			}
 			window.live = new PelagicCreatures.Copepod.Copepod(data);
 
-			window.live.watch(document.querySelector('[name="itsalive"]'));
-			window.live.watch(document.querySelector('[name="itsalive2"]'));
+			window.live.attachInput(document.querySelector('[name="itsalive1"]'));
+			window.live.attachInput(document.querySelector('[name="itsalive2"]'));
 
-			// notify me when 'data.xx' changes
-			window.live.subscribe('subscriptionId', (val) => {
-				console.log(val)
+			window.live.subscribe('subscriptionId', (property,val) => {
+				if(document.querySelector('#' + property)) {
+					document.querySelector('#' + property).innerHTML = val
+				}
 			});
 		</script>
 	</body>
