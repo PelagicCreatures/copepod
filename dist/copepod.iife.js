@@ -22,8 +22,10 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 			set (target, property, value) {
 				Reflect.set(target, property, value);
 				thisContext.notify();
-				if (thisContext.watch) {
-					thisContext.watch.value = thisContext.value[thisContext.inputProp].toString();
+				if (thisContext.watching) {
+					Object.keys(thisContext.watching).forEach((k) => {
+						thisContext.watching[k].value = thisContext.value[k].toString();
+					});
 				}
 				return true
 			},
@@ -38,31 +40,37 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 	class Copepod {
 		constructor (obj, watchInputForChange) {
 			this.uid = ++unique;
+			this.watching = {};
 			this.subscribers = {};
 			this.value = obj;
-
-			if (watchInputForChange) {
-				this.watch = watchInputForChange;
-				this.inputProp = this.watch.getAttribute('name');
-				if (!obj[this.inputProp]) {
-					obj[this.inputProp] = '';
-				}
-				if (this.watch.value && this.watch.value !== obj[this.inputProp]) {
-					obj[this.inputProp] = this.watch.value;
-				}
-				sargasso.utils.elementTools.on(this.constructor.name + '-' + this.uid, this.watch, 'keyup change click', '', (e) => {
-					if (this.watch.value !== this.value[this.inputProp]) {
-						this.value[this.inputProp] = this.watch.value;
-					}
-				}, true);
-			}
 
 			this.value = new Proxy(obj, buildProxy(this));
 		}
 
 		destroy () {
-			if (this.watch) {
-				sargasso.utils.elementTools.off(this.constructor.name + '-' + this.uid, this.watch, 'keyup change click');
+			Object.keys(this.watching).forEach((k) => {
+				sargasso.utils.elementTools.off(this.constructor.name + '-' + this.uid, this.watching[k], 'keyup change click');
+			});
+		}
+
+		watch (input) {
+			if (input) {
+				const inputProp = input.getAttribute('name');
+				this.watching[inputProp] = input;
+
+				if (input.value && input.value !== this.value[inputProp]) {
+					this.value[inputProp] = input.value;
+				}
+
+				if (!this.value[inputProp]) {
+					this.value[inputProp] = '';
+				}
+
+				sargasso.utils.elementTools.on(this.constructor.name + '-' + this.uid, input, 'keyup change click', '', (e) => {
+					if (e.target.value !== this.value[inputProp]) {
+						this.value[inputProp] = e.target.value;
+					}
+				}, true);
 			}
 		}
 

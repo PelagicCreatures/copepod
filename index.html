@@ -8,14 +8,19 @@
 
 		<p>in the console try: live.value.itsalive="changed!" to see input value change. Also watch console.log to see changes make in input.</p>
 
-		<input name="itsalive" value="initial value from input">
+		<input name="itsalive" value="1">
+		<input name="itsalive2" value="2">
 
 		<script defer>
 			let data = {
 				meta: 'data'
 			}
-			let input = document.querySelector('[name="itsalive"]');
-			window.live = new PelagicCreatures.Copepod.Copepod(data, input);
+			window.live = new PelagicCreatures.Copepod.Copepod(data);
+
+			window.live.watch(document.querySelector('[name="itsalive"]'));
+			window.live.watch(document.querySelector('[name="itsalive2"]'));
+
+			// notify me when 'data.xx' changes
 			window.live.subscribe('subscriptionId', (val) => {
 				console.log(val)
 			});
