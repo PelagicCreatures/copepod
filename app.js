@@ -16,6 +16,16 @@ const subscribers = {}
 
 var namespace = io.of('/copepod')
 
+/*
+	TODO:
+
+	initialize sync priority: data, input, socket
+
+	for database connection
+	set - update row
+	notify - broadcast changed property to room
+*/
+
 namespace.on('connection', (socket) => {
 	console.log('io connect')
 
@@ -36,9 +46,11 @@ namespace.on('connection', (socket) => {
 		socket.on('subscribe', (uid) => {
 			socket.join(uid)
 
-			subscribers[uid] = new CopepodServer(uid, null, {
-				namespace: namespace
-			})
+			if (!subscribers[uid]) {
+				subscribers[uid] = new CopepodServer(uid, null, {
+					namespace: namespace
+				})
+			}
 
 			socket.on('change', (msg) => {
 				console.log('change: ', msg)
