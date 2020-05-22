@@ -11,10 +11,10 @@
 **/
 
 import {
-	Copepod
+	CopepodClient
 }
-	from './lib/Copepod.js'
+	from './lib/CopepodCLient.js'
 
 export {
-	Copepod
+	CopepodClient
 }

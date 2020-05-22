@@ -2,32 +2,99 @@ this.PelagicCreatures = this.PelagicCreatures || {};
 this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 	'use strict';
 
-	let unique = 0;
-
 	// build Proxy to handle set and delete on an object's properties
-	const buildProxy = (thisContext) => {
+	const buildProxy = (self) => {
 		return {
 			set (target, property, value) {
 				Reflect.set(target, property, value);
-				thisContext.notify(property);
+				self.notify(property);
 				return true
 			},
 			deleteProperty (target, property) {
 				Reflect.deleteProperty(target, property);
-				thisContext.notify(property);
+				self.notify(property);
 				return true
 			}
 		}
 	};
 
 	class Copepod {
-		constructor (obj) {
-			this.uid = ++unique;
+		constructor (uid, obj, options = {}) {
+			this.uid = uid;
 
-			this.inputs = {}; // inputs to watch for value changes
 			this.subscribers = {}; // watchers to notify on value change
 
 			this.obj = new Proxy(obj, buildProxy(this));
+
+			this.socket = null;
+
+			this.options = options;
+		}
+
+		destroy () {
+
+		}
+
+		set (property, value) {
+			if (this.obj[property] !== value) {
+				this.obj[property] = value;
+			}
+		}
+
+		delete (property) {
+			delete this.obj[property];
+		}
+
+		subscribe (id, fn) {
+			this.subscribers[id] = fn;
+			Object.keys(this.obj).forEach((k) => {
+				fn(k, this.obj[k]);
+			});
+		}
+
+		unSubscribe (id) {
+			if (this.subscribers[id]) {
+				delete this.subscribers[id];
+			}
+		}
+
+		notify (property) {
+			// tell subscribers
+			Object.keys(this.subscribers).forEach((k) => {
+				this.subscribers[k](property, this.obj[property]);
+			});
+		}
+	}
+
+	class CopepodClient extends Copepod {
+		constructor (uid, obj, options) {
+			super(uid, obj, options);
+
+			this.inputs = {}; // inputs to watch for value changes
+
+			// establish client connection using socket.io
+			if (options.namespace) {
+				let url = options.url || '';
+				if (options.namespace) {
+					url += options.namespace;
+				}
+				this.socket = io(url);
+				this.socket.on('authenticated', (user) => {
+					this.socket.on('change', (e) => {
+						console.log('change from server: ', e);
+						this.set(e.property, e.value);
+					});
+					this.socket.emit('subscribe', this.uid);
+				});
+				this.socket.on('error', (err) => {
+					console.log('got error:', err);
+				});
+				this.socket.on('autherror', (err) => {
+					console.log('got autherror:', err);
+				});
+
+				this.socket.emit('authenticate');
+			}
 		}
 
 		destroy () {
@@ -35,14 +102,8 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 			Object.keys(this.inputs).forEach((k) => {
 				sargasso.utils.elementTools.off(this.constructor.name + '-' + this.uid, this.inputs[k], 'keyup change click');
 			});
-		}
 
-		set (property, value) {
-			this.obj[property] = value;
-		}
-
-		delete (property) {
-			delete this.obj[property];
+			super.destroy();
 		}
 
 		attachInput (input) {
@@ -77,29 +138,21 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 			}
 		}
 
-		subscribe (id, fn) {
-			this.subscribers[id] = fn;
-			Object.keys(this.obj).forEach((k) => {
-				fn(k, this.obj[k]);
-			});
-		}
-
-		unSubscribe (id) {
-			if (this.subscribers[id]) {
-				delete this.subscribers[id];
-			}
-		}
-
+		// propagate change to server
 		notify (property) {
+			super.notify(property);
+
 			// sync inputs (input <- this.obj[property])
 			Object.keys(this.inputs).forEach((k) => {
 				this.inputs[k].value = this.obj[k].toString();
 			});
 
-			// tell subscribers
-			Object.keys(this.subscribers).forEach((k) => {
-				this.subscribers[k](property, this.obj[property]);
-			});
+			if (this.socket) {
+				this.socket.emit('change', {
+					property: property,
+					value: this.obj[property]
+				});
+			}
 		}
 	}
 
@@ -115,7 +168,7 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 
 	**/
 
-	exports.Copepod = Copepod;
+	exports.CopepodClient = CopepodClient;
 
 	return exports;
 

@@ -4,7 +4,8 @@
 	<body>
 
 		<script src='https://cdn.jsdelivr.net/npm/@pelagiccreatures/sargasso@0.9.1/dist/sargasso.iife.js'></script>
-		<script src='dist/copepod.iife.js'></script>
+		<script src='/copepod.iife.js'></script>
+		<script src="/socket.io/socket.io.js"></script>
 
 		<p>in the console try: live.set('itsalive1','changed!') to see input value change. Also watch console.log to see changes make in input.</p>
 
@@ -12,12 +13,13 @@
 		<p>input2: <input name="itsalive2" value="2"> Value: <span id="itsalive2"></span></p>
 
 		<script defer>
+			document.cookie = "access-token=mytoken; expires=; path=/;";
 			let data = {
 				meta: 'data',
 				itsalive: 11,
 				itsalive2: 22
 			}
-			window.live = new PelagicCreatures.Copepod.Copepod(data);
+			window.live = new PelagicCreatures.Copepod.CopepodClient('test-uid', data,{ namespace: '/copepod' });
 
 			window.live.attachInput(document.querySelector('[name="itsalive1"]'));
 			window.live.attachInput(document.querySelector('[name="itsalive2"]'));
