@@ -16,20 +16,6 @@ const subscribers = {}
 
 var namespace = io.of('/copepod')
 
-const data = {}
-subscribers['test-uid'] = new CopepodServer('test-uid', data, {
-	namespace: namespace
-})
-
-let count = 0
-setInterval(() => {
-	let text = subscribers['test-uid'].obj.itsalive2 || 'from server'
-	if (text) {
-		text = text.replace(/[ \d]+$/, '')
-	}
-	subscribers['test-uid'].set('itsalive2', text + ' ' + (count++))
-}, 5000)
-
 namespace.on('connection', (socket) => {
 	console.log('io connect')
 
@@ -49,19 +35,32 @@ namespace.on('connection', (socket) => {
 
 		socket.on('subscribe', (uid) => {
 			socket.join(uid)
+
+			subscribers[uid] = new CopepodServer(uid, null, {
+				namespace: namespace
+			})
+
 			socket.on('change', (msg) => {
 				console.log('change: ', msg)
-				subscribers[uid].set(msg.property, msg.value)
+				if (subscribers[uid]) {
+					subscribers[uid].set(msg.property, msg.value)
+				}
 			})
 
 			socket.on('unsubscribe', () => {
 				console.log('unsubscribe')
-				subscribers.splice(subscribers.indexOf(uid), 1)
+				if (subscribers[uid]) {
+					subscribers[uid].destroy()
+					delete subscribers[uid]
+				}
 			})
 
 			socket.on('disconnect', () => {
 				console.log('subscriber disconnect')
-				subscribers.splice(subscribers.indexOf(uid), 1)
+				if (subscribers[uid]) {
+					subscribers[uid].destroy()
+					delete subscribers[uid]
+				}
 			})
 		})
 
