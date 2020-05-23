@@ -7,24 +7,24 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 		return {
 			set (target, property, value) {
 				Reflect.set(target, property, value);
-				self.notify(property);
+				self.sync(property);
 				return true
 			},
 			deleteProperty (target, property) {
 				Reflect.deleteProperty(target, property);
-				self.notify(property);
+				self.sync(property);
 				return true
 			}
 		}
 	};
 
 	class Copepod {
-		constructor (uid, obj, options = {}) {
+		constructor (uid, data = {}, options = {}) {
 			this.uid = uid;
 
-			this.subscribers = {}; // watchers to notify on value change
+			this.bindings = {}; // watchers to sync on value change
 
-			this.data = new Proxy(obj, buildProxy(this));
+			this.data = new Proxy(data, buildProxy(this));
 
 			this.socket = null;
 
@@ -32,7 +32,13 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 		}
 
 		destroy () {
+			Object.keys(this.bindings).forEach((k) => {
+				this.unbind(k);
+			});
+		}
 
+		getBoundData () {
+			return this.data
 		}
 
 		set (property, value) {
@@ -49,37 +55,39 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 			delete this.data[property];
 		}
 
-		subscribe (id, fn) {
-			this.subscribers[id] = fn;
+		bind (id, fn) {
+			this.bindings[id] = fn;
 			Object.keys(this.data).forEach((k) => {
 				fn(k, this.get(k));
 			});
 		}
 
-		unSubscribe (id) {
-			if (this.subscribers[id]) {
-				delete this.subscribers[id];
+		unbind (id) {
+			if (this.bindings[id]) {
+				delete this.bindings[id];
 			}
 		}
 
-		sync () {
+		syncAll () {
 			Object.keys(this.data).forEach((k) => {
-				this.notify(k);
+				this.sync(k);
 			});
 		}
 
 		// tell subscribers
-		notify (property) {
-			Object.keys(this.subscribers).forEach((k) => {
-				this.subscribers[k](property, this.get(property));
+		sync (property) {
+			Object.keys(this.bindings).forEach((k) => {
+				this.bindings[k](property, this.get(property));
 			});
 		}
 	}
 
 	/*
-		Normalize value from an input.
-		returns an array of values for groups and <select multiple>
+		get and set input value for regular inputs and groups
+
+		Uses input grouping scheme from @pelagiccreatures/molamola
 	*/
+
 	const getRealVal = (element) => {
 		let value = '';
 
@@ -100,12 +108,7 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 		} else {
 			if (element.getAttribute('type') === 'checkbox' || element.getAttribute('type') === 'radio') {
 				if (element.checked) {
-					const v = element.getAttribute('value');
-					if (v) {
-						value = v;
-					} else {
-						value = !!element.checked;
-					}
+					value = element.getAttribute('value');
 				}
 			} else if (element.tagName === 'SELECT') {
 				const selected = element.querySelectorAll('option:checked');
@@ -115,6 +118,8 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 				} else {
 					value = values[0];
 				}
+			} else if (element.tagName === 'OPTION') {
+				value = element.selected ? element.getAttribute('value') : undefined;
 			} else {
 				value = element.value;
 			}
@@ -123,10 +128,51 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 		return value
 	};
 
+	const setRealVal = (element, value) => {
+		if (element.getAttribute('name') === 'select-multiple') {
+			console.log(element, value);
+		}
+		if (element.getAttribute('data-group')) {
+			if (!value) {
+				value = [];
+			}
+			const group = element.closest('.input-group').querySelectorAll(element.getAttribute('data-group'));
+			for (let i = 0; i < group.length; i++) {
+				const e = group[i];
+				if (e.getAttribute('type') === 'radio') {
+					if (value == e.value) {
+						e.checked = true;
+					}
+				} else {
+					let index = -1;
+					for (let j = 0; j < value.length; j++) {
+						if (value[j] == e.value) {
+							index = j;
+							break
+						}
+					}
+					if (index !== -1) {
+						if (e.getAttribute('type') === 'checkbox') {
+							e.checked = true;
+						} else if (e.tagName === 'OPTION') {
+							e.selected = true;
+						}
+					}
+				}
+			}
+		} else {
+			if (element.getAttribute('type') === 'checkbox') {
+				element.checked = value == element.value;
+			} else {
+				element.value = value;
+			}
+		}
+	};
+
 	// add input sync and socket.io-client sync to copepod
 
 	class CopepodClient extends Copepod {
-		constructor (uid, obj, options) {
+		constructor (uid, obj = {}, options) {
 			super(uid, obj, options);
 
 			this.inputs = []; // all inputs to watch for value changes
@@ -171,16 +217,16 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 		}
 
 		// watch all inputs in the form for changes
-		attachForm (form) {
+		bindForm (form) {
 			const inputs = Array.from(form.querySelectorAll('input, select, textarea, button'));
 			inputs.forEach((e) => {
-				this.attachInput(e);
+				this.bindInput(e);
 			});
 
-			this.sync(); // update the inputs from the current data values
+			this.syncAll(); // update the inputs from the current data values
 		}
 
-		attachInput (input) {
+		bindInput (input) {
 			let theInput = input;
 			let inputProp = input.getAttribute('name');
 
@@ -217,7 +263,7 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 			}
 		}
 
-		detatchInput (input) {
+		unbindInput (input) {
 			this.inputs.splice(this.inputs.indexOf(input), 1);
 
 			const id = this.constructor.name + '-' + this.uid;
@@ -225,14 +271,15 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 		}
 
 		// propagate change to server
-		notify (property) {
-			super.notify(property);
+		sync (property) {
+			super.sync(property);
 
 			// sync inputs (input <- this.data[property])
 			Object.keys(this.authoritativeInputs).forEach((k) => {
-				this.authoritativeInputs[k].value = this.get(k);
+				setRealVal(this.authoritativeInputs[k], this.get(k));
 			});
 
+			// sync with server side if defined
 			if (this.socket) {
 				this.socket.emit('change', {
 					property: property,

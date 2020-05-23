@@ -1,5 +1,10 @@
 <html>
 	<head>
+		<style>
+			.input-group{margin-top:1em;}
+			label{display:block;}
+			select{min-width:100px;}
+		</style>
 	</head>
 	<body>
 
@@ -10,26 +15,76 @@
 		<p>in the console try: live.set('itsalive1','changed!') to see input value change. Also watch console.log to see changes make in input.</p>
 
 		<form>
-			<p>input1: <input name="itsalive1" > Value: <span id="itsalive1"></span></p>
-			<p>input2: <input name="itsalive2" > Value: <span id="itsalive2"></span></p>
+			<div class="input-group">
+				<label>input1:</label>
+				<input name="itsalive1">
+			</div>
+			<div class="input-group">
+				<label>input2:</label>
+				<input name="itsalive2">
+			</div>
+			<div class="input-group">
+				<label>Single Select</label>
+				<select name="select">
+					<option value="">---</option>
+					<option value="val 1">val 1</option>
+					<option value="val 2">val 2</option>
+				</select>
+			</div>
+			<div class="input-group">
+				<label>Multiple Select</label>
+				<select name="select-multiple" data-group='option' multiple>
+					<option value="">---</option>
+					<option value="val 1">val 1</option>
+					<option value="val 2">val 2</option>
+				</select>
+			</div>
+
+			<div class="input-group">
+				<label>Checkbox Boolean</label>
+				<input name="boolean" type="checkbox" value="set">
+			</div>
+
+			<div class="input-group">
+				<label>Checkbox Group</label>
+				<input type="hidden" name="checkbox-group" data-group='[type="checkbox"]' multiple>
+				<input type="checkbox" value="1"> Check 1
+				<input type="checkbox" value="2"> Check 2
+				<input type="checkbox" value="3"> Check 3
+				<input type="checkbox" value="4"> Check 4
+				<input type="checkbox" value="5"> Check 5
+				<input type="checkbox" value="6"> Check 6
+			</div>
+
+			<div class="input-group">
+				<label>Radio Group</label>
+				<input type="hidden" name="radio-group" data-group='[type="radio"]'>
+				<input type="radio" name="radio" value="1" checked> radio 1
+				<input type="radio" name="radio" value="2"> radio 2
+				<input type="radio" name="radio" value="3"> radio 3
+				<input type="radio" name="radio" value="4"> radio 4
+				<input type="radio" name="radio" value="5"> radio 5
+				<input type="radio" name="radio" value="6"> radio 6
+			</div>
 		</form>
+
+		<p>Value: <span id="itsalive1"></span></p>
+		<p>Value: <span id="itsalive2"></span></p>
+
 
 		<script defer>
 			document.cookie = "access-token=mytoken; expires=; path=/;";
-			let data = {
-				meta: 'data',
-				itsalive1: 11,
-				itsalive2: 22
-			}
-			window.live = new PelagicCreatures.Copepod.CopepodClient('test-uid', data,{ namespace: '/copepod' });
 
-			window.live.attachForm(document.querySelector('form'));
-
-			window.live.subscribe('subscriptionId', (property,val) => {
+			window.live = new PelagicCreatures.Copepod.CopepodClient('test-uid', undefined, { namespace: '/copepod' });
+			window.live.bindForm(document.querySelector('form'));
+			window.live.bind('subscriptionId', (property, val) => {
 				if(document.querySelector('#' + property)) {
 					document.querySelector('#' + property).innerHTML = val
 				}
 			});
+
+			window.data = window.live.getBoundData()
+
 		</script>
 	</body>
 </html>

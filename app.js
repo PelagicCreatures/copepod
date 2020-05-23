@@ -26,6 +26,8 @@ var namespace = io.of('/copepod')
 	notify - broadcast changed property to room
 */
 
+const data = {}
+
 namespace.on('connection', (socket) => {
 	console.log('io connect')
 
@@ -47,13 +49,10 @@ namespace.on('connection', (socket) => {
 			socket.join(uid)
 
 			if (!subscribers[uid]) {
-				subscribers[uid] = new CopepodServer(uid, {
-					itsalive1: 'server1',
-					itsalive2: 'server2'
-				}, {
+				subscribers[uid] = new CopepodServer(uid, data, {
 					namespace: namespace
 				})
-				subscribers[uid].sync()
+				subscribers[uid].syncAll()
 			}
 
 			socket.on('change', (msg) => {
