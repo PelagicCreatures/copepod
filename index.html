@@ -9,20 +9,21 @@
 
 		<p>in the console try: live.set('itsalive1','changed!') to see input value change. Also watch console.log to see changes make in input.</p>
 
-		<p>input1: <input name="itsalive1" value="1"> Value: <span id="itsalive1"></span></p>
-		<p>input2: <input name="itsalive2" value="2"> Value: <span id="itsalive2"></span></p>
+		<form>
+			<p>input1: <input name="itsalive1" > Value: <span id="itsalive1"></span></p>
+			<p>input2: <input name="itsalive2" > Value: <span id="itsalive2"></span></p>
+		</form>
 
 		<script defer>
 			document.cookie = "access-token=mytoken; expires=; path=/;";
 			let data = {
 				meta: 'data',
-				itsalive: 11,
+				itsalive1: 11,
 				itsalive2: 22
 			}
 			window.live = new PelagicCreatures.Copepod.CopepodClient('test-uid', data,{ namespace: '/copepod' });
 
-			window.live.attachInput(document.querySelector('[name="itsalive1"]'));
-			window.live.attachInput(document.querySelector('[name="itsalive2"]'));
+			window.live.attachForm(document.querySelector('form'));
 
 			window.live.subscribe('subscriptionId', (property,val) => {
 				if(document.querySelector('#' + property)) {

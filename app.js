@@ -47,9 +47,13 @@ namespace.on('connection', (socket) => {
 			socket.join(uid)
 
 			if (!subscribers[uid]) {
-				subscribers[uid] = new CopepodServer(uid, null, {
+				subscribers[uid] = new CopepodServer(uid, {
+					itsalive1: 'server1',
+					itsalive2: 'server2'
+				}, {
 					namespace: namespace
 				})
+				subscribers[uid].sync()
 			}
 
 			socket.on('change', (msg) => {
