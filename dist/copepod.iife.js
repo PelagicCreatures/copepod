@@ -42,7 +42,7 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 		}
 
 		set (property, value) {
-			if (this.get(property) !== value) {
+			if (JSON.stringify(this.get(property)) !== JSON.stringify(value)) {
 				this.data[property] = value;
 			}
 		}
@@ -157,6 +157,12 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 						} else if (e.tagName === 'OPTION') {
 							e.selected = true;
 						}
+					} else {
+						if (e.getAttribute('type') === 'checkbox') {
+							e.checked = false;
+						} else if (e.tagName === 'OPTION') {
+							e.selected = false;
+						}
 					}
 				}
 			}
@@ -253,7 +259,7 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 				const handler = (e) => {
 					const value = getRealVal(theInput);
 
-					if (value !== this.data[inputProp]) {
+					if (JSON.stringify(this.get(inputProp)) !== JSON.stringify(value)) {
 						this.set(inputProp, value);
 					}
 				};
@@ -274,16 +280,15 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 		sync (property) {
 			super.sync(property);
 
-			// sync inputs (input <- this.data[property])
-			Object.keys(this.authoritativeInputs).forEach((k) => {
-				setRealVal(this.authoritativeInputs[k], this.get(k));
-			});
+			if (this.authoritativeInputs[property]) {
+				setRealVal(this.authoritativeInputs[property], this.get(property));
+			}
 
 			// sync with server side if defined
 			if (this.socket) {
 				this.socket.emit('change', {
 					property: property,
-					value: this.data[property]
+					value: this.get(property)
 				});
 			}
 		}
