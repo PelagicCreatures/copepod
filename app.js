@@ -1,9 +1,6 @@
 const express = require('express')
 const app = express()
 const http = require('http').createServer(app)
-const io = require('socket.io')(http)
-const cookie = require('cookie')
-const CopepodServer = require('./lib/CopepodServer.js')
 const path = require('path')
 
 app.use(express.static(path.join(__dirname, 'dist')))
@@ -12,83 +9,115 @@ app.get('/', (req, res) => {
 	res.sendFile(__dirname + '/index.html')
 })
 
-const subscribers = {}
+const {
+	Sequelize, Model, DataTypes
+} = require('sequelize')
+const sequelize = new Sequelize('sqlite::memory:')
+class TestTable extends Model {}
+TestTable.init({
+	input1: DataTypes.STRING,
+	input2: DataTypes.STRING,
+	select: DataTypes.STRING,
+	selectmultiple: DataTypes.JSON,
+	boolean: DataTypes.BOOLEAN,
+	checkboxgroup: DataTypes.JSON,
+	radiogroup: DataTypes.JSON
+}, {
+	sequelize, modelName: 'TestTable'
+})
 
-var namespace = io.of('/copepod')
 
-/*
-	TODO:
+let main = async function () {
+	let CopepodServer
 
-	initialize sync priority: data, input, socket
+	try {
+		let mod = await
+		import ('./lib/CopepodServer.mjs')
 
-	for database connection
-	set - update row
-	notify - broadcast changed property to room
-*/
+		class CopepodSequelize extends mod.CopepodServer {
+			constructor(uid, data = {}, options = {}) {
+				super(uid, data, options)
+				this.table = sequelize.models[options.table]
+				this.row = options.row
+				this.instance = undefined
 
-const data = {}
-
-namespace.on('connection', (socket) => {
-	console.log('io connect')
-
-	socket.on('authenticate', () => {
-		const cookies = cookie.parse(socket.request.headers.cookie || '')
-		if (!cookies['access-token']) {
-			return socket.emit('autherror', {
-				status: 400
-			})
-		}
-
-		if (cookies['access-token'] !== 'mytoken') {
-			return socket.emit('autherror', {
-				status: 403
-			})
-		}
-
-		socket.on('subscribe', (uid) => {
-			socket.join(uid)
-
-			if (!subscribers[uid]) {
-				subscribers[uid] = new CopepodServer(uid, data, {
-					namespace: namespace
+				this.on('read', () => {
+					this.getInstance((err, instance) => {
+						// TODO error
+						this.instance = instance
+						Object.keys(instance.dataValues).forEach((prop) => {
+							this.data[prop] = instance.dataValues[prop]
+						})
+						console.log('read', err, instance)
+					})
 				})
-				subscribers[uid].syncAll()
+
+				this.on('write', (property) => {
+					this.persist(property, (err, instance) => {
+						// TODO error
+						this.instance = instance
+						console.log('write', err, instance)
+					})
+				})
+
+				this.emit('read')
 			}
 
-			socket.on('change', (msg) => {
-				console.log('change: ', msg)
-				if (subscribers[uid]) {
-					subscribers[uid].set(msg.property, msg.value)
+			getInstance(cb) {
+				if (this.instance) {
+					return cb(null, this.instance)
 				}
-			})
 
-			socket.on('unsubscribe', () => {
-				console.log('unsubscribe')
-				if (subscribers[uid]) {
-					subscribers[uid].destroy()
-					delete subscribers[uid]
+				if (!this.row) {
+					this.table.create({}).then((instance) => {
+						cb(null, instance)
+					}).catch(function (err) {
+						cb(err)
+					})
 				}
-			})
+				else {
+					this.table.findByPk(this.row).then((instance) => {
+						cb(null, instance)
+					}).catch(function (err) {
+						cb(err)
+					})
+				}
+			}
 
-			socket.on('disconnect', () => {
-				console.log('subscriber disconnect')
-				if (subscribers[uid]) {
-					subscribers[uid].destroy()
-					delete subscribers[uid]
-				}
-			})
+			persist(property, cb) {
+				this.getInstance((err, instance) => {
+					instance[property] = JSON.stringify(this.get(property))
+					instance.save().then(() => {
+						cb(err, instance)
+					}).catch(function (err) {
+						cb(err)
+					})
+				})
+			}
+
+			sync(property) {
+				super.sync(property)
+				this.emit('write', property)
+			}
+		}
+
+		mod.mount(http, {
+			class: CopepodSequelize
 		})
-
-		socket.emit('authenticated', {
-			user: 'testuser'
-		})
-	})
-
-	socket.on('disconnect', () => {
-		console.log('io disconnect')
-	})
-})
+	}
+	catch (e) {
+		console.log('main error ', e)
+	}
+}
 
 http.listen(3000, () => {
 	console.log('listening on *:3000')
 })
+
+// give us time to get into inspector
+let wait = 0
+setTimeout(() => {
+	sequelize.sync().then(() => {
+		main()
+	})
+}, wait)

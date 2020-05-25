@@ -1,12 +1,23 @@
 # @PelagicCreatures/Copepod
 
-### Sargasso supervised Lazy Loaded Images
+### Observable Objects for end to end data binding
 
 [Demo Page](https://blog.PelagicCreatures.com/demos/copepod)
 
 ### Status: under active development. More soon.
 
-Sargasso class that implements proxied objects.
+Classes that implements proxied objects for client, server data binding
+
+#### Copepod
+Uses javascript Proxy and Reflect to observe changes to an object's properties
+
+```
+const testing = new Copepod('testing')
+testing.bind((property,value) => {
+	console.log('changed:',property, value)
+})
+
+
 
 ```
 @author Michael Rhodes

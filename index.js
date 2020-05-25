@@ -13,7 +13,7 @@
 import {
 	CopepodClient
 }
-	from './lib/CopepodCLient.js'
+	from './lib/CopepodClient.js'
 
 export {
 	CopepodClient

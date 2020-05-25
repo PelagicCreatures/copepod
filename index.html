@@ -33,7 +33,7 @@
 			</div>
 			<div class="input-group">
 				<label>Multiple Select</label>
-				<select name="select-multiple" data-group='option' multiple>
+				<select name="selectmultiple" data-group='option' multiple>
 					<option value="">---</option>
 					<option value="val 1">val 1</option>
 					<option value="val 2">val 2</option>
@@ -47,7 +47,7 @@
 
 			<div class="input-group">
 				<label>Checkbox Group</label>
-				<input type="hidden" name="checkbox-group" data-group='[type="checkbox"]' multiple>
+				<input type="hidden" name="checkboxgroup" data-group='[type="checkbox"]' multiple>
 				<input type="checkbox" value="1"> Check 1
 				<input type="checkbox" value="2"> Check 2
 				<input type="checkbox" value="3"> Check 3
@@ -58,7 +58,7 @@
 
 			<div class="input-group">
 				<label>Radio Group</label>
-				<input type="hidden" name="radio-group" data-group='[type="radio"]'>
+				<input type="hidden" name="radiogroup" data-group='[type="radio"]'>
 				<input type="radio" name="radio" value="1" checked> radio 1
 				<input type="radio" name="radio" value="2"> radio 2
 				<input type="radio" name="radio" value="3"> radio 3
@@ -75,13 +75,14 @@
 		<script defer>
 			document.cookie = "access-token=mytoken; expires=; path=/;";
 
-			window.live = new PelagicCreatures.Copepod.CopepodClient('test-uid', undefined, { namespace: '/copepod' });
+			window.live = new PelagicCreatures.Copepod.CopepodClient('test-uid', undefined, { namespace: '/copepod', table: 'TestTable', row: undefined});
 			window.live.bindForm(document.querySelector('form'));
-			window.live.bind('subscriptionId', (property, val) => {
-				if(document.querySelector('#' + property)) {
-					document.querySelector('#' + property).innerHTML = val
-				}
-			});
+			window.live.bind('subscriptionId', (val) => {
+				document.querySelector('#itsalive1').innerHTML = val
+			}, 'itsalive1');
+			window.live.bind('subscriptionId', (val) => {
+				document.querySelector('#itsalive2').innerHTML = val
+			}, 'itsalive2');
 
 			window.data = window.live.getBoundData()
 

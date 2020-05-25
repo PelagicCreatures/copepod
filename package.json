@@ -3,7 +3,11 @@
 	"version": "0.1.1",
 	"description": "Sargasso Lazy Loading Images",
 	"main": "index.js",
+	"engines": {
+		"node": ">=14"
+	},
 	"scripts": {
+		"start": "node --inspect --experimental-modules app.js",
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"build": "rollup --no-treeshake -c rollup.config.js"
 	},
@@ -31,9 +35,12 @@
 		"eslint-plugin-promise": "^4.2.1",
 		"eslint-plugin-standard": "^4.0.1",
 		"express": "^4.17.1",
+		"rollup-plugin-node-builtins": "^2.1.2",
+		"sequelize": "^5.21.10",
 		"socket.io": "^2.3.0"
 	},
 	"dependencies": {
-		"@pelagiccreatures/sargasso": "^0.8.10"
+		"@pelagiccreatures/sargasso": "^0.8.10",
+		"sqlite3": "^4.2.0"
 	}
 }
