@@ -42,13 +42,16 @@ let main = async function () {
 				this.instance = undefined
 
 				this.on('read', () => {
-					this.getInstance((err, instance) => {
+					this.getInstance(false, (err, instance) => {
 						// TODO error
-						this.instance = instance
-						Object.keys(instance.dataValues).forEach((prop) => {
-							this.data[prop] = instance.dataValues[prop]
-						})
-						console.log('read', err, instance)
+						if (instance) {
+							this.instance = instance
+							Object.keys(instance.dataValues).forEach((prop) => {
+								this.data[prop] = instance.dataValues[prop]
+							})
+							console.log('read', err, instance)
+							this.syncAll()
+						}
 					})
 				})
 
@@ -63,9 +66,13 @@ let main = async function () {
 				this.emit('read')
 			}
 
-			getInstance(cb) {
+			getInstance(allocate, cb) {
 				if (this.instance) {
 					return cb(null, this.instance)
+				}
+
+				if (!allocate && !this.row) {
+					return cb()
 				}
 
 				if (!this.row) {
@@ -85,7 +92,7 @@ let main = async function () {
 			}
 
 			persist(property, cb) {
-				this.getInstance((err, instance) => {
+				this.getInstance(true, (err, instance) => {
 					instance[property] = JSON.stringify(this.get(property))
 					instance.save().then(() => {
 						cb(err, instance)
