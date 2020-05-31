@@ -68,24 +68,22 @@
 			</div>
 		</form>
 
-		<p>Value: <span id="itsalive1"></span></p>
-		<p>Value: <span id="itsalive2"></span></p>
-
-
 		<script defer>
 			document.cookie = "access-token=mytoken; expires=; path=/;";
 
-			window.live = new PelagicCreatures.Copepod.CopepodClient('test-uid', undefined, { namespace: '/copepod', table: 'TestTable', row: undefined});
+			window.live = new PelagicCreatures.Copepod.CopepodClient('test-uid', undefined, { namespace: '/copepod', table: 'TestTable', row: 1});
 			window.live.bindForm(document.querySelector('form'));
-			window.live.bind('subscriptionId', (val) => {
-				document.querySelector('#itsalive1').innerHTML = val
-			}, 'itsalive1');
-			window.live.bind('subscriptionId', (val) => {
-				document.querySelector('#itsalive2').innerHTML = val
-			}, 'itsalive2');
-
 			window.data = window.live.getBoundData()
-
 		</script>
+
+		<p>
+			bound elements:
+			<sargasso-copepod-element data-copepod-id="test-uid">
+				itsalive1: ${itsalive1}
+				<br>
+				itsalive2: ${itsalive2}
+			</sargasso-copepod-element>
+		</p>
+
 	</body>
 </html>

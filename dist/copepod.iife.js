@@ -476,6 +476,11 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
     return ret;
   }
 
+  const registeredCopepods = {};
+  const getCopepod = (id) => {
+  	return registeredCopepods[id]
+  };
+
   /*
   	build Proxy to observe set and delete on object properties
   	*/
@@ -519,6 +524,8 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		this.socket = null;
 
   		this.options = options;
+
+  		registeredCopepods[this.uid] = this;
   	}
 
   	/*
@@ -526,6 +533,7 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		*/
   	destroy () {
   		delete (this.data);
+  		delete registeredCopepods[this.uid];
   		Object.keys(this.bindings).forEach((prop) => {
   			Object.keys(this.bindings[prop]).forEach((k) => {
   				this.unbind(prop, k);
@@ -571,7 +579,7 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		@function syncAll - sync all observed object properties
   		*/
   	syncAll () {
-  		Object.keys(this.data).forEach((k) => {
+  		Object.keys(this.data || {}).forEach((k) => {
   			this.sync(k);
   		});
   	}
@@ -630,6 +638,46 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 
   	Uses input grouping scheme from @pelagiccreatures/molamola
   */
+
+  class CopepodElement extends sargasso.Sargasso {
+  	constructor (element, options = {}) {
+  		options.watchDOM = true;
+  		super(element, options);
+  	}
+
+  	DOMChanged () {
+  		if (!this.template && this.element.innerHTML) {
+  			sargasso.services.theDOMWatcher.unSubscribe(this);
+  			this.template = this.element.innerHTML;
+  			this.element.innerHTML = '';
+  			this.render();
+  		}
+  	}
+
+  	start () {
+  		super.start();
+
+  		this.copepod = getCopepod(this.element.getAttribute('data-copepod-id'));
+
+  		this.copepod.bind(this.uid, (prop, val) => {
+  			this.render();
+  		});
+  	}
+
+  	sleep () {
+  		this.copepod.unbind(this.uid);
+  		delete (this.copepod);
+  		super.sleep();
+  	}
+
+  	render () {
+  		this.element.innerHTML = this.template.replace(/\${(.*?)}/g, (match, prop) => {
+  			return this.copepod.get(prop)
+  		});
+  	}
+  }
+
+  sargasso.utils.registerSargassoClass('CopepodElement', CopepodElement);
 
   const getRealVal = (element) => {
   	let value = '';
@@ -837,6 +885,8 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   			this.socket.emit('change', {
   				property: property,
   				value: this.get(property)
+  			}, (result) => {
+  				console.log('socket status:', result);
   			});
   		}
   	}
