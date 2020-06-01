@@ -12,16 +12,16 @@
 		<script src='/copepod.iife.js'></script>
 		<script src="/socket.io/socket.io.js"></script>
 
-		<p>in the console try: live.set('itsalive1','changed!') to see input value change. Also watch console.log to see changes make in input.</p>
+		<p>in the console try: live.set('input1','changed!') to see input value change. Also watch console.log to see changes make in input.</p>
 
 		<form>
 			<div class="input-group">
 				<label>input1:</label>
-				<input name="itsalive1">
+				<input name="input1">
 			</div>
 			<div class="input-group">
 				<label>input2:</label>
-				<input name="itsalive2">
+				<input name="input2">
 			</div>
 			<div class="input-group">
 				<label>Single Select</label>
@@ -79,9 +79,9 @@
 		<p>
 			bound elements:
 			<sargasso-copepod-element data-copepod-id="test-uid">
-				itsalive1: ${itsalive1}
+				input1: ${input1}
 				<br>
-				itsalive2: ${itsalive2}
+				input2: ${input2}
 			</sargasso-copepod-element>
 		</p>
 
