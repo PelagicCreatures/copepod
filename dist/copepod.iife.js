@@ -2691,15 +2691,18 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 
   const isEqual$1 = isEqual_1;
 
+  /*
+  		Registry of Copepod instances by unique id.
+  		*/
   const registeredCopepods = {};
   const getCopepod = (id) => {
   	return registeredCopepods[id]
   };
 
-  let guid = 1;
+  let guid = 1; // internal unique id
 
   /*
-  	build Proxy to observe set and delete on object properties
+  	build Proxy to observe changes to object properties
   	*/
   const buildProxy = (self) => {
   	return {
@@ -2720,19 +2723,19 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   	@class Copepod
 
   	Base class for data binding. Implements Proxy and Reflect on an object so that
-  	changes can be observed.
+  	changes can be observed and manages subscribing and notifying observers.
 
   	*/
   class Copepod extends EventEmitter {
   	/*
-  		@param { String } uid - unique id of
-  		@param { Object } data - optional javascript object to observe
+  		@param { String } id - unique id of
+  		@param { Object } data - optional externally defined javascript object to observe
   		@param { Object } options - optional, used by subclasses
   		*/
-  	constructor (uid, data = {}, options = {}) {
+  	constructor (id, data = {}, options = {}) {
   		super();
 
-  		this.uid = uid;
+  		this.id = id;
 
   		this.unique = guid++;
 
@@ -2744,15 +2747,16 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 
   		this.options = options;
 
-  		registeredCopepods[this.uid] = this;
+  		registeredCopepods[this.id] = this;
   	}
 
   	/*
   		@function destroy - remove all bindings
   		*/
   	destroy () {
+  		console.log('Copepod destroy', this.id);
   		delete this.data;
-  		delete registeredCopepods[this.uid];
+  		delete registeredCopepods[this.id];
   		Object.keys(this.bindings).forEach((prop) => {
   			Object.keys(this.bindings[prop]).forEach((k) => {
   				this.unbind(prop, k);
@@ -2855,6 +2859,8 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		});
   	}
   }
+
+  // TODO on server disconnect/reconnect (connectivity issue) reauthorize
 
   /*
   	get and set input value for regular inputs and groups
@@ -2994,8 +3000,8 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   // add input sync and socket.io-client sync to copepod
 
   class CopepodClient extends Copepod {
-  	constructor (uid, obj = {}, options) {
-  		super(uid, obj, options);
+  	constructor (id, obj = {}, options) {
+  		super(id, obj, options);
 
   		this.inputs = []; // all inputs to watch for value changes
 
@@ -3010,19 +3016,6 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 
   			this.socket = io(url);
 
-  			this.socket.on('authenticated', (user) => {
-  				this.socket.on('change', (e) => {
-  					console.log('CopepodClient got change from server: ', e);
-  					this.set(e.property, e.value);
-  				});
-
-  				this.socket.emit('subscribe', {
-  					uid: this.uid,
-  					table: options.table,
-  					row: options.row
-  				});
-  			});
-
   			this.socket.on('error', (err) => {
   				console.log('got error:', err);
   			});
@@ -3031,7 +3024,37 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   				console.log('got autherror:', err);
   			});
 
-  			this.socket.emit('authenticate');
+  			this.socket.emit('authenticate', (user) => {
+  				// listen for change events from server side
+  				this.socket.on('change', (e) => {
+  					console.log('CopepodClient got change from server: ', e);
+  					this.set(e.property, e.value);
+  				});
+
+  				// subscribe to change for copepod id
+  				// socke.io 'room' corresponds to id of Copepod object
+  				this.socket.emit('subscribe', {
+  					id: this.id,
+  					table: options.table,
+  					row: options.row
+  				});
+
+  				this.socket.on('disconnect', (reason) => {
+  					console.log('got disconnect', reason);
+  				});
+
+  				this.socket.on('reconnect', (attemptNumber) => {
+  					console.log('got reconnect', attemptNumber);
+  					this.socket.emit('authenticate', (user) => {
+  						console.log('got reconnected', user);
+  						this.socket.emit('subscribe', {
+  							id: this.id,
+  							table: options.table,
+  							row: options.row
+  						});
+  					});
+  				});
+  			});
   		}
   	}
 
@@ -3085,7 +3108,7 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   				this.set(inputProp, value);
   			};
 
-  			const id = this.constructor.name + '-' + this.uid;
+  			const id = this.constructor.name + '-' + this.id;
   			sargasso.utils.elementTools.on(id, input, 'keyup change click blur', null, handler);
   		}
   	}
@@ -3093,7 +3116,7 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   	unbindInput (input) {
   		this.inputs.splice(this.inputs.indexOf(input), 1);
 
-  		const id = this.constructor.name + '-' + this.uid;
+  		const id = this.constructor.name + '-' + this.id;
   		sargasso.utils.elementTools.off(id, input, 'keyup change click blur', null);
   	}
 
@@ -3111,7 +3134,7 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   				property: property,
   				value: this.get(property)
   			}, (result) => {
-  				console.log('socket status:', result);
+  				console.log('CopepodClient socket emit change result:', result);
   			});
   		}
   	}

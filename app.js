@@ -24,7 +24,7 @@ TestTable.init({
 	checkboxgroup: DataTypes.JSON,
 	radiogroup: DataTypes.JSON
 }, {
-	sequelize, modelName: 'TestTable'
+	sequelize, modelName: 'TestTable', timestamps: false
 })
 
 
