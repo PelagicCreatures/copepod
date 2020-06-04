@@ -2692,8 +2692,8 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   const isEqual$1 = isEqual_1;
 
   /*
-  		Registry of Copepod instances by unique id.
-  		*/
+  	Registry of Copepod instances by unique id.
+  	*/
   const registeredCopepods = {};
   const getCopepod = (id) => {
   	return registeredCopepods[id]
@@ -2860,55 +2860,11 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   	}
   }
 
-  // TODO on server disconnect/reconnect (connectivity issue) reauthorize
-
   /*
   	get and set input value for regular inputs and groups
 
   	Uses input grouping scheme from @pelagiccreatures/molamola
   */
-
-  class CopepodElement extends sargasso.Sargasso {
-  	constructor (element, options = {}) {
-  		options.watchDOM = true;
-  		super(element, options);
-  	}
-
-  	DOMChanged () {
-  		if (!this.template && this.element.innerHTML) {
-  			sargasso.services.theDOMWatcher.unSubscribe(this);
-  			this.template = this.element.innerHTML;
-  			this.element.innerHTML = '';
-  			this.render();
-  		}
-  	}
-
-  	start () {
-  		super.start();
-
-  		this.copepod = getCopepod(this.element.getAttribute('data-copepod-id'));
-
-  		this.copepod.bind(this.uid, (prop, val) => {
-  			this.render();
-  		});
-  	}
-
-  	sleep () {
-  		this.copepod.unbind(this.uid);
-  		delete (this.copepod);
-  		super.sleep();
-  	}
-
-  	render () {
-  		if (this.template) {
-  			this.element.innerHTML = this.template.replace(/\${(.*?)}/g, (match, prop) => {
-  				return this.copepod.get(prop)
-  			});
-  		}
-  	}
-  }
-
-  sargasso.utils.registerSargassoClass('CopepodElement', CopepodElement);
 
   const getRealVal = (element) => {
   	let value = '';
@@ -2996,6 +2952,50 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		}
   	}
   };
+
+  // TODO on server disconnect/reconnect (connectivity issue) reauthorize
+
+  class CopepodElement extends sargasso.Sargasso {
+  	constructor (element, options = {}) {
+  		options.watchDOM = true;
+  		super(element, options);
+  	}
+
+  	DOMChanged () {
+  		if (!this.template && this.element.innerHTML) {
+  			sargasso.services.theDOMWatcher.unSubscribe(this);
+  			this.template = this.element.innerHTML;
+  			this.element.innerHTML = '';
+  			this.render();
+  		}
+  	}
+
+  	start () {
+  		super.start();
+
+  		this.copepod = getCopepod(this.element.getAttribute('data-copepod-id'));
+
+  		this.copepod.bind(this.uid, (prop, val) => {
+  			this.render();
+  		});
+  	}
+
+  	sleep () {
+  		this.copepod.unbind(this.uid);
+  		delete (this.copepod);
+  		super.sleep();
+  	}
+
+  	render () {
+  		if (this.template) {
+  			this.element.innerHTML = this.template.replace(/\${(.*?)}/g, (match, prop) => {
+  				return this.copepod.get(prop)
+  			});
+  		}
+  	}
+  }
+
+  sargasso.utils.registerSargassoClass('CopepodElement', CopepodElement);
 
   // add input sync and socket.io-client sync to copepod
 

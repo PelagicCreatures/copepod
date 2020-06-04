@@ -27,8 +27,6 @@ TestTable.init({
 	sequelize, modelName: 'TestTable', timestamps: false
 })
 
-
-
 let main = async function () {
 	let CopepodServer
 
@@ -60,9 +58,17 @@ http.listen(3000, () => {
 let wait = 0
 setTimeout(() => {
 	sequelize.sync().then(() => {
+
 		TestTable.create({
-			input1: 'allocated'
+			input1: '1'
 		})
+
+		setInterval(() => {
+			TestTable.findByPk(1).then((instance) => {
+				instance.input1 = (parseInt(instance.input1) + 1) + ''
+				instance.save()
+			})
+		}, 6000)
 
 		main()
 	})
