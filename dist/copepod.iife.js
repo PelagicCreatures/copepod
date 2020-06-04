@@ -2704,16 +2704,19 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   /*
   	build Proxy to observe changes to object properties
   	*/
+
+  var objectConstructor = ({}).constructor;
+
   const buildProxy = (self) => {
   	return {
   		set (target, property, value) {
+  			let source = self.getSource();
+  			if (value !== null && value !== undefined && value.constructor === objectConstructor && value._is_copepod_payload) {
+  				source = value.source;
+  				value = value.value;
+  			}
   			Reflect.set(target, property, value);
-  			self.sync(property);
-  			return true
-  		},
-  		deleteProperty (target, property) {
-  			Reflect.deleteProperty(target, property);
-  			self.sync(property);
+  			self.sync(property, source);
   			return true
   		}
   	}
@@ -2742,8 +2745,6 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		this.bindings = {}; // watchers to sync on value change
 
   		this.data = new Proxy(data, buildProxy(this));
-
-  		this.socket = null;
 
   		this.options = options;
 
@@ -2775,11 +2776,16 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		@function set - set observed object property
   		@param { String } property - observed object property to set
   		@param value - string, array, object or whatever to assign to property
+  		@source { String } - source of change
   		*/
-  	set (property, value) {
+  	set (property, value, source) {
   		if (!isEqual$1(this.get(property), value)) {
   			console.log('Copepod set:', property, this.get(property), value);
-  			this.data[property] = value;
+  			this.data[property] = {
+  				_is_copepod_payload: true,
+  				source: source || this.getSource(),
+  				value: value
+  			};
   		}
   	}
 
@@ -2800,6 +2806,10 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		*/
   	delete (property) {
   		delete this.data[property];
+  	}
+
+  	getSource () {
+  		return this.constructor.name + ':' + this.id
   	}
 
   	/*
@@ -2850,7 +2860,7 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		function sync - notify observers of property value change
   		@param { String } property - property that changed
   		*/
-  	sync (property) {
+  	sync (property, source) {
   		Object.keys(this.bindings['*'] || {}).forEach((k) => {
   			this.bindings['*'][k](property, this.get(property));
   		});
@@ -2859,6 +2869,54 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		});
   	}
   }
+
+  /*
+  	get and set input value for regular inputs and groups
+
+  	Uses input grouping scheme from @pelagiccreatures/molamola
+  */
+
+  class CopepodElement extends sargasso.Sargasso {
+  	constructor (element, options = {}) {
+  		options.watchDOM = true;
+  		super(element, options);
+  	}
+
+  	DOMChanged () {
+  		if (!this.template && this.element.innerHTML) {
+  			sargasso.services.theDOMWatcher.unSubscribe(this);
+  			this.template = this.element.innerHTML;
+  			this.element.innerHTML = '';
+  			this.render();
+  		}
+  	}
+
+  	start () {
+  		super.start();
+
+  		this.copepod = getCopepod(this.element.getAttribute('data-copepod-id'));
+
+  		this.copepod.bind(this.uid, (prop, val) => {
+  			this.render();
+  		});
+  	}
+
+  	sleep () {
+  		this.copepod.unbind(this.uid);
+  		delete (this.copepod);
+  		super.sleep();
+  	}
+
+  	render () {
+  		if (this.template) {
+  			this.element.innerHTML = this.template.replace(/\${(.*?)}/g, (match, prop) => {
+  				return this.copepod.get(prop)
+  			});
+  		}
+  	}
+  }
+
+  sargasso.utils.registerSargassoClass('CopepodElement', CopepodElement);
 
   /*
   	get and set input value for regular inputs and groups
@@ -2954,49 +3012,6 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   };
 
   // TODO on server disconnect/reconnect (connectivity issue) reauthorize
-
-  class CopepodElement extends sargasso.Sargasso {
-  	constructor (element, options = {}) {
-  		options.watchDOM = true;
-  		super(element, options);
-  	}
-
-  	DOMChanged () {
-  		if (!this.template && this.element.innerHTML) {
-  			sargasso.services.theDOMWatcher.unSubscribe(this);
-  			this.template = this.element.innerHTML;
-  			this.element.innerHTML = '';
-  			this.render();
-  		}
-  	}
-
-  	start () {
-  		super.start();
-
-  		this.copepod = getCopepod(this.element.getAttribute('data-copepod-id'));
-
-  		this.copepod.bind(this.uid, (prop, val) => {
-  			this.render();
-  		});
-  	}
-
-  	sleep () {
-  		this.copepod.unbind(this.uid);
-  		delete (this.copepod);
-  		super.sleep();
-  	}
-
-  	render () {
-  		if (this.template) {
-  			this.element.innerHTML = this.template.replace(/\${(.*?)}/g, (match, prop) => {
-  				return this.copepod.get(prop)
-  			});
-  		}
-  	}
-  }
-
-  sargasso.utils.registerSargassoClass('CopepodElement', CopepodElement);
-
   // add input sync and socket.io-client sync to copepod
 
   class CopepodClient extends Copepod {
@@ -3006,6 +3021,10 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		this.inputs = []; // all inputs to watch for value changes
 
   		this.authoritativeInputs = {}; // inputs to keep in sync w/ properties
+
+  		this.socket = null;
+
+  		this.pauseSocket = false; // flag to prevent re-propagation to server
 
   		// establish client connection using socket.io-client
   		if (options.namespace) {
@@ -3028,7 +3047,7 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   				// listen for change events from server side
   				this.socket.on('change', (e) => {
   					console.log('CopepodClient got change from server: ', e);
-  					this.set(e.property, e.value);
+  					this.set(e.property, e.value, e.source);
   				});
 
   				// subscribe to change for copepod id
@@ -3120,22 +3139,27 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		sargasso.utils.elementTools.off(id, input, 'keyup change click blur', null);
   	}
 
-  	// propagate change to server
-  	sync (property) {
-  		super.sync(property);
+  	getSource () {
+  		return super.getSource() + ':' + this.socket.id
+  	}
 
+  	// propagate change to server
+  	sync (property, source) {
+  		super.sync(property, source);
   		if (this.authoritativeInputs[property]) {
   			setRealVal(this.authoritativeInputs[property], this.get(property));
   		}
 
-  		// sync with server side if defined
   		if (this.socket) {
-  			this.socket.emit('change', {
-  				property: property,
-  				value: this.get(property)
-  			}, (result) => {
-  				console.log('CopepodClient socket emit change result:', result);
-  			});
+  			if (source === this.getSource()) {
+  				this.socket.emit('change', {
+  					source: this.socket.id,
+  					property: property,
+  					value: this.get(property)
+  				});
+  			} else {
+  				console.log('CopepodClient no re-propagation');
+  			}
   		}
   	}
   }
