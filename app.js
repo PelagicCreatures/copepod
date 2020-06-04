@@ -63,12 +63,14 @@ setTimeout(() => {
 			input1: '1'
 		})
 
+		/*
 		setInterval(() => {
 			TestTable.findByPk(1).then((instance) => {
 				instance.input1 = (parseInt(instance.input1) + 1) + ''
 				instance.save()
 			})
 		}, 6000)
+		*/
 
 		main()
 	})
