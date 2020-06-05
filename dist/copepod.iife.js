@@ -2689,7 +2689,309 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 
   var isEqual_1 = isEqual;
 
+  /**
+   * Gets the timestamp of the number of milliseconds that have elapsed since
+   * the Unix epoch (1 January 1970 00:00:00 UTC).
+   *
+   * @static
+   * @memberOf _
+   * @since 2.4.0
+   * @category Date
+   * @returns {number} Returns the timestamp.
+   * @example
+   *
+   * _.defer(function(stamp) {
+   *   console.log(_.now() - stamp);
+   * }, _.now());
+   * // => Logs the number of milliseconds it took for the deferred invocation.
+   */
+  var now = function() {
+    return _root.Date.now();
+  };
+
+  var now_1 = now;
+
+  /** `Object#toString` result references. */
+  var symbolTag$1 = '[object Symbol]';
+
+  /**
+   * Checks if `value` is classified as a `Symbol` primitive or object.
+   *
+   * @static
+   * @memberOf _
+   * @since 4.0.0
+   * @category Lang
+   * @param {*} value The value to check.
+   * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
+   * @example
+   *
+   * _.isSymbol(Symbol.iterator);
+   * // => true
+   *
+   * _.isSymbol('abc');
+   * // => false
+   */
+  function isSymbol(value) {
+    return typeof value == 'symbol' ||
+      (isObjectLike_1(value) && _baseGetTag(value) == symbolTag$1);
+  }
+
+  var isSymbol_1 = isSymbol;
+
+  /** Used as references for various `Number` constants. */
+  var NAN = 0 / 0;
+
+  /** Used to match leading and trailing whitespace. */
+  var reTrim = /^\s+|\s+$/g;
+
+  /** Used to detect bad signed hexadecimal string values. */
+  var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
+
+  /** Used to detect binary string values. */
+  var reIsBinary = /^0b[01]+$/i;
+
+  /** Used to detect octal string values. */
+  var reIsOctal = /^0o[0-7]+$/i;
+
+  /** Built-in method references without a dependency on `root`. */
+  var freeParseInt = parseInt;
+
+  /**
+   * Converts `value` to a number.
+   *
+   * @static
+   * @memberOf _
+   * @since 4.0.0
+   * @category Lang
+   * @param {*} value The value to process.
+   * @returns {number} Returns the number.
+   * @example
+   *
+   * _.toNumber(3.2);
+   * // => 3.2
+   *
+   * _.toNumber(Number.MIN_VALUE);
+   * // => 5e-324
+   *
+   * _.toNumber(Infinity);
+   * // => Infinity
+   *
+   * _.toNumber('3.2');
+   * // => 3.2
+   */
+  function toNumber(value) {
+    if (typeof value == 'number') {
+      return value;
+    }
+    if (isSymbol_1(value)) {
+      return NAN;
+    }
+    if (isObject_1(value)) {
+      var other = typeof value.valueOf == 'function' ? value.valueOf() : value;
+      value = isObject_1(other) ? (other + '') : other;
+    }
+    if (typeof value != 'string') {
+      return value === 0 ? value : +value;
+    }
+    value = value.replace(reTrim, '');
+    var isBinary = reIsBinary.test(value);
+    return (isBinary || reIsOctal.test(value))
+      ? freeParseInt(value.slice(2), isBinary ? 2 : 8)
+      : (reIsBadHex.test(value) ? NAN : +value);
+  }
+
+  var toNumber_1 = toNumber;
+
+  /** Error message constants. */
+  var FUNC_ERROR_TEXT = 'Expected a function';
+
+  /* Built-in method references for those with the same name as other `lodash` methods. */
+  var nativeMax = Math.max,
+      nativeMin = Math.min;
+
+  /**
+   * Creates a debounced function that delays invoking `func` until after `wait`
+   * milliseconds have elapsed since the last time the debounced function was
+   * invoked. The debounced function comes with a `cancel` method to cancel
+   * delayed `func` invocations and a `flush` method to immediately invoke them.
+   * Provide `options` to indicate whether `func` should be invoked on the
+   * leading and/or trailing edge of the `wait` timeout. The `func` is invoked
+   * with the last arguments provided to the debounced function. Subsequent
+   * calls to the debounced function return the result of the last `func`
+   * invocation.
+   *
+   * **Note:** If `leading` and `trailing` options are `true`, `func` is
+   * invoked on the trailing edge of the timeout only if the debounced function
+   * is invoked more than once during the `wait` timeout.
+   *
+   * If `wait` is `0` and `leading` is `false`, `func` invocation is deferred
+   * until to the next tick, similar to `setTimeout` with a timeout of `0`.
+   *
+   * See [David Corbacho's article](https://css-tricks.com/debouncing-throttling-explained-examples/)
+   * for details over the differences between `_.debounce` and `_.throttle`.
+   *
+   * @static
+   * @memberOf _
+   * @since 0.1.0
+   * @category Function
+   * @param {Function} func The function to debounce.
+   * @param {number} [wait=0] The number of milliseconds to delay.
+   * @param {Object} [options={}] The options object.
+   * @param {boolean} [options.leading=false]
+   *  Specify invoking on the leading edge of the timeout.
+   * @param {number} [options.maxWait]
+   *  The maximum time `func` is allowed to be delayed before it's invoked.
+   * @param {boolean} [options.trailing=true]
+   *  Specify invoking on the trailing edge of the timeout.
+   * @returns {Function} Returns the new debounced function.
+   * @example
+   *
+   * // Avoid costly calculations while the window size is in flux.
+   * jQuery(window).on('resize', _.debounce(calculateLayout, 150));
+   *
+   * // Invoke `sendMail` when clicked, debouncing subsequent calls.
+   * jQuery(element).on('click', _.debounce(sendMail, 300, {
+   *   'leading': true,
+   *   'trailing': false
+   * }));
+   *
+   * // Ensure `batchLog` is invoked once after 1 second of debounced calls.
+   * var debounced = _.debounce(batchLog, 250, { 'maxWait': 1000 });
+   * var source = new EventSource('/stream');
+   * jQuery(source).on('message', debounced);
+   *
+   * // Cancel the trailing debounced invocation.
+   * jQuery(window).on('popstate', debounced.cancel);
+   */
+  function debounce(func, wait, options) {
+    var lastArgs,
+        lastThis,
+        maxWait,
+        result,
+        timerId,
+        lastCallTime,
+        lastInvokeTime = 0,
+        leading = false,
+        maxing = false,
+        trailing = true;
+
+    if (typeof func != 'function') {
+      throw new TypeError(FUNC_ERROR_TEXT);
+    }
+    wait = toNumber_1(wait) || 0;
+    if (isObject_1(options)) {
+      leading = !!options.leading;
+      maxing = 'maxWait' in options;
+      maxWait = maxing ? nativeMax(toNumber_1(options.maxWait) || 0, wait) : maxWait;
+      trailing = 'trailing' in options ? !!options.trailing : trailing;
+    }
+
+    function invokeFunc(time) {
+      var args = lastArgs,
+          thisArg = lastThis;
+
+      lastArgs = lastThis = undefined;
+      lastInvokeTime = time;
+      result = func.apply(thisArg, args);
+      return result;
+    }
+
+    function leadingEdge(time) {
+      // Reset any `maxWait` timer.
+      lastInvokeTime = time;
+      // Start the timer for the trailing edge.
+      timerId = setTimeout(timerExpired, wait);
+      // Invoke the leading edge.
+      return leading ? invokeFunc(time) : result;
+    }
+
+    function remainingWait(time) {
+      var timeSinceLastCall = time - lastCallTime,
+          timeSinceLastInvoke = time - lastInvokeTime,
+          timeWaiting = wait - timeSinceLastCall;
+
+      return maxing
+        ? nativeMin(timeWaiting, maxWait - timeSinceLastInvoke)
+        : timeWaiting;
+    }
+
+    function shouldInvoke(time) {
+      var timeSinceLastCall = time - lastCallTime,
+          timeSinceLastInvoke = time - lastInvokeTime;
+
+      // Either this is the first call, activity has stopped and we're at the
+      // trailing edge, the system time has gone backwards and we're treating
+      // it as the trailing edge, or we've hit the `maxWait` limit.
+      return (lastCallTime === undefined || (timeSinceLastCall >= wait) ||
+        (timeSinceLastCall < 0) || (maxing && timeSinceLastInvoke >= maxWait));
+    }
+
+    function timerExpired() {
+      var time = now_1();
+      if (shouldInvoke(time)) {
+        return trailingEdge(time);
+      }
+      // Restart the timer.
+      timerId = setTimeout(timerExpired, remainingWait(time));
+    }
+
+    function trailingEdge(time) {
+      timerId = undefined;
+
+      // Only invoke if we have `lastArgs` which means `func` has been
+      // debounced at least once.
+      if (trailing && lastArgs) {
+        return invokeFunc(time);
+      }
+      lastArgs = lastThis = undefined;
+      return result;
+    }
+
+    function cancel() {
+      if (timerId !== undefined) {
+        clearTimeout(timerId);
+      }
+      lastInvokeTime = 0;
+      lastArgs = lastCallTime = lastThis = timerId = undefined;
+    }
+
+    function flush() {
+      return timerId === undefined ? result : trailingEdge(now_1());
+    }
+
+    function debounced() {
+      var time = now_1(),
+          isInvoking = shouldInvoke(time);
+
+      lastArgs = arguments;
+      lastThis = this;
+      lastCallTime = time;
+
+      if (isInvoking) {
+        if (timerId === undefined) {
+          return leadingEdge(lastCallTime);
+        }
+        if (maxing) {
+          // Handle invocations in a tight loop.
+          clearTimeout(timerId);
+          timerId = setTimeout(timerExpired, wait);
+          return invokeFunc(lastCallTime);
+        }
+      }
+      if (timerId === undefined) {
+        timerId = setTimeout(timerExpired, wait);
+      }
+      return result;
+    }
+    debounced.cancel = cancel;
+    debounced.flush = flush;
+    return debounced;
+  }
+
+  var debounce_1 = debounce;
+
   const isEqual$1 = isEqual_1;
+  const debounce$1 = debounce_1;
 
   /*
   	Registry of Copepod instances by unique id.
@@ -2740,9 +3042,9 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
 
   		this.id = id;
 
-  		this.unique = guid++;
+  		this.uniqueId = guid++;
 
-  		this.bindings = {}; // watchers to sync on value change
+  		this.bound = {}; // watchers to sync on value change
 
   		this.data = new Proxy(data, buildProxy(this));
 
@@ -2755,11 +3057,10 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		@function destroy - remove all bindings
   		*/
   	destroy () {
-  		console.log('Copepod destroy', this.id);
   		delete this.data;
   		delete registeredCopepods[this.id];
-  		Object.keys(this.bindings).forEach((prop) => {
-  			Object.keys(this.bindings[prop]).forEach((k) => {
+  		Object.keys(this.bound).forEach((prop) => {
+  			Object.keys(this.bound[prop]).forEach((k) => {
   				this.unbind(prop, k);
   			});
   		});
@@ -2780,7 +3081,6 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		*/
   	set (property, value, source) {
   		if (!isEqual$1(this.get(property), value)) {
-  			console.log('Copepod set:', property, this.get(property), value);
   			this.data[property] = {
   				_is_copepod_payload: true,
   				source: source || this.getSource(),
@@ -2794,9 +3094,6 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		@param { String } property - observed object property to get
   		*/
   	get (property) {
-  		if (!this.data) {
-  			console.log('wha?');
-  		}
   		return this.data[property]
   	}
 
@@ -2836,10 +3133,10 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		(value) => {}
   		*/
   	bind (id, fn, property = '*') {
-  		if (!this.bindings[property]) {
-  			this.bindings[property] = {};
+  		if (!this.bound[property]) {
+  			this.bound[property] = {};
   		}
-  		this.bindings[property][id] = fn;
+  		this.bound[property][id] = fn;
   		Object.keys(this.data).forEach((k) => {
   			fn(k, this.get(k));
   		});
@@ -2851,8 +3148,8 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		@param { String } property - optional name of property being observed
   		*/
   	unbind (id, property = '*') {
-  		if (this.bindings[property][id]) {
-  			delete this.bindings[property][id];
+  		if (this.bound[property][id]) {
+  			delete this.bound[property][id];
   		}
   	}
 
@@ -2861,11 +3158,11 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		@param { String } property - property that changed
   		*/
   	sync (property, source) {
-  		Object.keys(this.bindings['*'] || {}).forEach((k) => {
-  			this.bindings['*'][k](property, this.get(property));
+  		Object.keys(this.bound['*'] || {}).forEach((k) => {
+  			this.bound['*'][k](property, this.get(property));
   		});
-  		Object.keys(this.bindings[property] || {}).forEach((k) => {
-  			this.bindings[property][k](this.get(property));
+  		Object.keys(this.bound[property] || {}).forEach((k) => {
+  			this.bound[property][k](this.get(property));
   		});
   	}
   }
@@ -2965,9 +3262,6 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   };
 
   const setRealVal = (element, value) => {
-  	if (element.getAttribute('name') === 'select-multiple') {
-  		console.log(element, value);
-  	}
   	if (element.getAttribute('data-group')) {
   		if (!value) {
   			value = [];
@@ -3018,9 +3312,9 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   	constructor (id, obj = {}, options) {
   		super(id, obj, options);
 
-  		this.inputs = []; // all inputs to watch for value changes
+  		this.watchedInputs = []; // all inputs to watch for value changes
 
-  		this.authoritativeInputs = {}; // inputs to keep in sync w/ properties
+  		this.boundInputs = {}; // inputs to keep in sync w/ properties
 
   		this.socket = null;
 
@@ -3081,7 +3375,7 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		if (this.socket) {
   			this.socket.disconnect(true);
   		}
-  		this.inputs.forEach((input) => {
+  		this.watchedInputs.forEach((input) => {
   			this.detatchInput(input);
   		});
 
@@ -3113,19 +3407,19 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   			}
   		}
 
-  		if (!this.authoritativeInputs[inputProp]) {
-  			this.authoritativeInputs[inputProp] = theInput;
+  		if (!this.boundInputs[inputProp]) {
+  			this.boundInputs[inputProp] = theInput;
   		}
 
   		// watch input for change and sync
-  		if (this.inputs.indexOf(input) === -1) {
-  			this.inputs.push(input);
+  		if (this.watchedInputs.indexOf(input) === -1) {
+  			this.watchedInputs.push(input);
 
   			// sync property to authoritative input
-  			const handler = (e) => {
+  			const handler = debounce$1((e) => {
   				const value = getRealVal(theInput);
   				this.set(inputProp, value);
-  			};
+  			}, 500);
 
   			const id = this.constructor.name + '-' + this.id;
   			sargasso.utils.elementTools.on(id, input, 'keyup change click blur', null, handler);
@@ -3133,7 +3427,7 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   	}
 
   	unbindInput (input) {
-  		this.inputs.splice(this.inputs.indexOf(input), 1);
+  		this.watchedInputs.splice(this.watchedInputs.indexOf(input), 1);
 
   		const id = this.constructor.name + '-' + this.id;
   		sargasso.utils.elementTools.off(id, input, 'keyup change click blur', null);
@@ -3146,8 +3440,9 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   	// propagate change to server
   	sync (property, source) {
   		super.sync(property, source);
-  		if (this.authoritativeInputs[property]) {
-  			setRealVal(this.authoritativeInputs[property], this.get(property));
+
+  		if (this.boundInputs[property]) {
+  			setRealVal(this.boundInputs[property], this.get(property));
   		}
 
   		if (this.socket) {
@@ -3157,8 +3452,6 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   					property: property,
   					value: this.get(property)
   				});
-  			} else {
-  				console.log('CopepodClient no re-propagation');
   			}
   		}
   	}
