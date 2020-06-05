@@ -3375,8 +3375,9 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		if (this.socket) {
   			this.socket.disconnect(true);
   		}
+
   		this.watchedInputs.forEach((input) => {
-  			this.detatchInput(input);
+  			this.unbindInput(input);
   		});
 
   		super.destroy();
