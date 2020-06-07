@@ -70,10 +70,20 @@
 
 		<script defer>
 			document.cookie = "access-token=mytoken; expires=; path=/;";
+			document.cookie = "user=test; expires=; path=/;";
 
 			window.live = new PelagicCreatures.Copepod.CopepodClient('test-uid', undefined, { namespace: '/copepod', table: 'TestTable', row: 1});
 			window.live.bindForm(document.querySelector('form'));
 			window.data = window.live.getBoundData()
+			window.live.on('error',(err)=> {
+				alert(err.message)
+				console.log(err)
+			})
+			window.live.on('status',(msg)=>{
+				console.log(msg)
+			})
+			window.live.start()
+
 		</script>
 
 		<section>

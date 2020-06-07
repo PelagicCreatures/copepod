@@ -3156,6 +3156,7 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   	/*
   		function sync - notify observers of property value change
   		@param { String } property - property that changed
+  		@param { String } source - id of originator of change
   		*/
   	sync (property, source) {
   		Object.keys(this.bound['*'] || {}).forEach((k) => {
@@ -3168,11 +3169,8 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   }
 
   /*
-  	get and set input value for regular inputs and groups
-
-  	Uses input grouping scheme from @pelagiccreatures/molamola
-  */
-
+  	templated copepod data binding observer for html elements
+  	*/
   class CopepodElement extends sargasso.Sargasso {
   	constructor (element, options = {}) {
   		options.watchDOM = true;
@@ -3305,8 +3303,7 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   	}
   };
 
-  // TODO on server disconnect/reconnect (connectivity issue) reauthorize
-  // add input sync and socket.io-client sync to copepod
+  // input element and socket.io-client sync behavior for Copepod data binding
 
   class CopepodClient extends Copepod {
   	constructor (id, obj = {}, options) {
@@ -3319,55 +3316,79 @@ this.PelagicCreatures.Copepod = (function (exports, sargasso) {
   		this.socket = null;
 
   		this.pauseSocket = false; // flag to prevent re-propagation to server
+  	}
 
-  		// establish client connection using socket.io-client
-  		if (options.namespace) {
-  			let url = options.url || '';
-  			if (options.namespace) {
-  				url += options.namespace;
+  	// establish and authenticated client connection using socket.io-client
+  	start () {
+  		if (this.options.namespace) {
+  			let url = this.options.url || '';
+  			if (this.options.namespace) {
+  				url += this.options.namespace;
   			}
 
   			this.socket = io(url);
 
   			this.socket.on('error', (err) => {
-  				console.log('got error:', err);
+  				this.emit('error', {
+  					message: 'socket error',
+  					error: err
+  				});
   			});
 
-  			this.socket.on('autherror', (err) => {
-  				console.log('got autherror:', err);
-  			});
+  			// authenticated with server
+  			const authenticateHandler = (result) => {
+  				if (result.status !== 'ok') {
+  					this.emit('error', {
+  						message: 'copepod authentication failed',
+  						error: result
+  					});
+  					return
+  				}
 
-  			this.socket.emit('authenticate', (user) => {
-  				// listen for change events from server side
-  				this.socket.on('change', (e) => {
-  					console.log('CopepodClient got change from server: ', e);
-  					this.set(e.property, e.value, e.source);
-  				});
+  				this.emit('status', 'authenticated');
 
-  				// subscribe to change for copepod id
-  				// socke.io 'room' corresponds to id of Copepod object
-  				this.socket.emit('subscribe', {
-  					id: this.id,
-  					table: options.table,
-  					row: options.row
-  				});
+  				const user = result.user;
+
+  				const changeHandler = (event) => {
+  					this.set(event.property, event.value, event.source);
+  				};
 
   				this.socket.on('disconnect', (reason) => {
-  					console.log('got disconnect', reason);
+  					this.emit('status', 'disconnect: ' + reason);
   				});
 
-  				this.socket.on('reconnect', (attemptNumber) => {
-  					console.log('got reconnect', attemptNumber);
-  					this.socket.emit('authenticate', (user) => {
-  						console.log('got reconnected', user);
-  						this.socket.emit('subscribe', {
-  							id: this.id,
-  							table: options.table,
-  							row: options.row
+  				// listen for change events from server side
+  				this.socket.on('change', changeHandler);
+
+  				// subscribe to change for copepod id
+  				// socket.io 'room' corresponds to id of Copepod object
+  				const options = {
+  					id: this.id,
+  					table: this.options.table,
+  					row: this.options.row
+  				};
+
+  				// subscribed to a Copepod ID, listen for changes and monitor connection
+  				const subscribeHandler = (result) => {
+  					if (result.status !== 'ok') {
+  						this.emit('error', {
+  							message: 'copepod authentication failed',
+  							error: result
   						});
-  					});
-  				});
+  					}
+
+  					this.emit('status', 'subscribed');
+  				};
+
+  				this.socket.emit('subscribe', options, subscribeHandler);
+  			};
+
+  			this.socket.on('reconnect', (attemptNumber) => {
+  				this.emit('status', 'reconnect attempt: ' + attemptNumber);
+  				this.socket.emit('authenticate', authenticateHandler);
   			});
+
+  			this.socket.emit('authenticate', authenticateHandler);
   		}
   	}
 

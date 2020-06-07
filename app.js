@@ -2,6 +2,7 @@ const express = require('express')
 const app = express()
 const http = require('http').createServer(app)
 const path = require('path')
+const cookie = require('cookie')
 
 app.use(express.static(path.join(__dirname, 'dist')))
 
@@ -13,7 +14,9 @@ const {
 	Sequelize, Model, DataTypes
 } = require('sequelize')
 
-const sequelize = new Sequelize('sqlite::memory:')
+const sequelize = new Sequelize('sqlite::memory:', {
+	//storage: 'working/database.sqlite'
+})
 class TestTable extends Model {}
 TestTable.init({
 	input1: DataTypes.STRING,
@@ -26,6 +29,32 @@ TestTable.init({
 }, {
 	sequelize, modelName: 'TestTable', timestamps: false
 })
+
+let authUserHandler = (socket, cb) => {
+	const cookies = cookie.parse(socket.request.headers.cookie || '')
+
+	if (!cookies['access-token']) {
+		let err = new Error('bad request, missing token.')
+		err.statusCode = 400;
+		return cb(err)
+	}
+
+	if (cookies['access-token'] !== 'mytoken') {
+		let err = new Error('unauthorized')
+		err.statusCode = 401;
+		return cb(err)
+	}
+
+	const user = {
+		id: 'fake-user-' + cookies['user']
+	}
+
+	cb(null, user);
+}
+
+let authAccessHandler = (user, id, persistOptions, cb) => {
+	cb()
+}
 
 let main = async function () {
 	let CopepodServer
@@ -43,7 +72,7 @@ let main = async function () {
 			namespace: '/copepod',
 			class: persist.CopepodSequelize,
 			db: sequelize
-		})
+		}, authUserHandler, authAccessHandler)
 	}
 	catch (e) {
 		console.log('main error ', e)
@@ -60,7 +89,8 @@ setTimeout(() => {
 	sequelize.sync().then(() => {
 
 		TestTable.create({
-			input1: '1'
+			input1: '1',
+			radiogroup: '6'
 		})
 
 		/*
