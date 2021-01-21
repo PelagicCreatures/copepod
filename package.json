@@ -39,7 +39,7 @@
 		"lodash": "^4.17.19",
 		"rollup-plugin-node-builtins": "^2.1.2",
 		"sequelize": "^5.21.10",
-		"socket.io": "^2.3.0",
+		"socket.io": "^2.4.0",
 		"sqlite3": "^4.2.0"
 	},
 	"dependencies": {
