@@ -1,7 +1,10 @@
 import commonjs from '@rollup/plugin-commonjs'
 import nodeResolve from '@rollup/plugin-node-resolve'
 import json from '@rollup/plugin-json'
-import builtins from 'rollup-plugin-node-builtins'
+import {
+	terser
+}
+	from 'rollup-plugin-terser'
 
 export default {
 	input: './index.js',
@@ -9,18 +12,31 @@ export default {
 
 	output: [{
 		format: 'iife',
-		name: 'PelagicCreatures.Copepod',
+		name: 'CopepodModule',
 		file: './dist/copepod.iife.js',
 		globals: {
-			'@pelagiccreatures/sargasso': 'PelagicCreatures.Sargasso'
+			'@pelagiccreatures/sargasso': 'SargassoModule'
+		}
+	}, {
+		format: 'iife',
+		name: 'CopepodModule',
+		file: './dist/copepod.iife.min.js',
+		globals: {
+			'@pelagiccreatures/sargasso': 'SargassoModule'
 		},
+		plugins: [terser({
+			output: {
+				comments: false
+			}
+		})],
 		sourcemap: true
 	}],
 
 	plugins: [
-		builtins(),
 		json(),
-		nodeResolve(),
+		nodeResolve({
+			preferBuiltins: false
+		}),
 		commonjs()
 	]
 }

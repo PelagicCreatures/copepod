@@ -8,9 +8,6 @@
 	</head>
 	<body>
 
-		<script src='https://cdn.jsdelivr.net/npm/@pelagiccreatures/sargasso@0.9.1/dist/sargasso.iife.js'></script>
-		<script src='/copepod.iife.js'></script>
-		<script src="/socket.io/socket.io.js"></script>
 
 		<p>in the console try: live.set('input1','changed!') to see input value change. Also watch console.log to see changes make in input.</p>
 
@@ -68,11 +65,16 @@
 			</div>
 		</form>
 
+
+		<script src='https://cdn.jsdelivr.net/npm/@pelagiccreatures/sargasso@1.0.1/dist/sargasso.iife.js'></script>
+		<script src='/copepod.iife.js'></script>
+		<script src="/socket.io/socket.io.js"></script>
+
 		<script defer>
 			document.cookie = "access-token=mytoken; expires=; path=/;";
 			document.cookie = "user=test; expires=; path=/;";
 
-			window.live = new PelagicCreatures.Copepod.CopepodClient('test-uid', undefined, { namespace: '/copepod', table: 'TestTable', row: 1});
+			window.live = new CopepodModule.CopepodClient('test-uid', undefined, { namespace: '/copepod', table: 'TestTable', row: 1});
 			window.live.bindForm(document.querySelector('form'));
 			window.data = window.live.getBoundData()
 			window.live.on('error',(err)=> {

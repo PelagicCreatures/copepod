@@ -21,28 +21,28 @@
 		"url": "https://github.com/PelagicCreatures/copepod/issues"
 	},
 	"homepage": "https://github.com/PelagicCreatures/copepod#readme",
-	"peerDependencies": {
-		"@pelagiccreatures/sargasso": "^0.9.1"
-	},
 	"devDependencies": {
-		"rollup": "^2.22.1",
-		"@rollup/plugin-commonjs": "^14.0.0",
+		"@rollup/plugin-commonjs": "^17.1.0",
 		"@rollup/plugin-json": "^4.1.0",
-		"@rollup/plugin-node-resolve": "^8.4.0",
-		"eslint": "^7.5.0",
-		"eslint-config-standard": "^14.1.1",
-		"eslint-plugin-import": "^2.22.0",
+		"@rollup/plugin-node-resolve": "^11.1.1",
+		"eslint": "^7.20.0",
+		"eslint-config-standard": "^16.0.2",
+		"eslint-plugin-import": "^2.22.1",
 		"eslint-plugin-node": "^11.1.0",
-		"eslint-plugin-promise": "^4.2.1",
-		"eslint-plugin-standard": "^4.0.1",
+		"eslint-plugin-promise": "^4.3.1",
+		"eslint-plugin-standard": "^5.0.0",
+		"events": "^3.2.0",
 		"express": "^4.17.1",
-		"lodash": "^4.17.19",
-		"rollup-plugin-node-builtins": "^2.1.2",
-		"sequelize": "^5.21.10",
-		"socket.io": "^2.3.0",
-		"sqlite3": "^4.2.0"
+		"lodash": "^4.17.20",
+		"rollup": "^2.39.0 ",
+		"rollup-plugin-terser": "^7.0.2",
+		"sequelize": "^6.5.0",
+		"socket.io": "^3.1.1",
+		"sqlite3": "^5.0.1"
 	},
 	"dependencies": {
-		"@pelagiccreatures/sargasso": "^0.9.4"
+		"@pelagiccreatures/sargasso": "^1.0.1",
+		"node-pre-gyp": "^0.11.0",
+		"rebuild": "^0.1.2"
 	}
 }
